@@ -160,7 +160,7 @@ function Footer({ navigate }: NavProps) {
         </div>
         <div>
           <p className="footer-title">Contact</p>
-          <a href="mailto:shuduo.fang@gmail.com">shuduo.fang@gmail.com</a>
+          <a href="mailto:contact@annuotaimedtech.com">contact@annuotaimedtech.com</a>
           <a href="tel:+8618210813735">+86 182 1081 3735</a>
           <a href="tel:+16465250292">+1 646 525 0292</a>
         </div>
@@ -521,7 +521,7 @@ function ContactPage() {
         <h1>Start A Product Or Market Conversation.</h1>
         <p>For product information, distribution discussions, or clinical inquiries, reach our team directly or use the form.</p>
         <div className="direct-contact">
-          <a href="mailto:shuduo.fang@gmail.com"><span>Email</span><strong>shuduo.fang@gmail.com</strong></a>
+          <a href="mailto:contact@annuotaimedtech.com"><span>Email</span><strong>contact@annuotaimedtech.com</strong></a>
           <a href="tel:+8618210813735"><span>China</span><strong>+86 182 1081 3735</strong></a>
           <a href="tel:+16465250292"><span>United States</span><strong>+1 646 525 0292</strong></a>
         </div>

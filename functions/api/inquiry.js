@@ -109,8 +109,8 @@ export async function onRequestPost(context) {
         },
         body: JSON.stringify({
           to: RECIPIENT_EMAIL,
-          from: { email: SENDER_EMAIL, name: 'ANNUOTAI MEDTECH Website' },
-          replyTo: { email: inquiry.email, name: fullName },
+          from: { address: SENDER_EMAIL, name: 'ANNUOTAI MEDTECH Website' },
+          reply_to: { address: inquiry.email, name: fullName },
           subject: `Website inquiry from ${inquiry.organization}`,
           text: [
             'New website inquiry',
