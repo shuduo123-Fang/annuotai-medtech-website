@@ -16,6 +16,7 @@
 - `README.md`：项目说明、目标、范围、状态、关键决策
 - `docs/`：项目文档、需求、方案、笔记
 - `src/`：代码、脚本、配置
+- `functions/`：Cloudflare Pages 服务端函数
 - `assets/`：素材、参考资料、图片、样本数据
 - `outputs/`：最终交付物、导出文件、报告、成品
 
@@ -28,6 +29,7 @@
 - 首个产品：E7 GENPRO HPV E7 Oncoprotein Rapid Test
 - 主要受众：经销商、医院/医生、普通消费者
 - 已实现：响应式导航、产品 brochure 下载、WhatsApp/微信二维码、询盘表单状态、英文内容与临床数据展示
+- 询盘表单：已完成 Cloudflare Pages Function 代码接入，待配置生产环境邮件凭证并完成线上发送测试
 - 生产构建：`outputs/website/`
 - 本地预览：运行 `npm run dev`
 
@@ -45,3 +47,4 @@
 - Logo 采用用户于 2026-07-17 提供的透明背景版本，产品视觉采用最新无水印高清冷色实验室摄影素材，联系页使用最新微信与 WhatsApp 二维码。
 - 产品图片使用全出血媒体与独立技术数据栏呈现，不再使用带白色内边距的传统产品卡片。
 - 所有公开产品参数、临床性能与联系方式均以用户提供的 2026 brochure 为当前依据，后续由用户统一复核更新。
+- 网站询盘通过同源 Pages Function 提交，固定发送至 Cloudflare 中已验证的目标邮箱；API Token 仅存放在 Cloudflare Secret 中，不写入前端或代码仓库。

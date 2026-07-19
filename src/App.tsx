@@ -479,9 +479,39 @@ function ContactPage() {
     }
     setStatus('loading')
     setError('')
-    await new Promise(resolve => window.setTimeout(resolve, 800))
-    setStatus('success')
-    form.reset()
+
+    const formData = new FormData(form)
+
+    try {
+      const response = await fetch('/api/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.get('firstName'),
+          lastName: formData.get('lastName'),
+          email: formData.get('email'),
+          organization: formData.get('organization'),
+          audience: formData.get('audience'),
+          message: formData.get('message'),
+          website: formData.get('website'),
+        }),
+      })
+
+      const result = await response.json().catch(() => null) as { error?: string } | null
+      if (!response.ok) {
+        throw new Error(result?.error || 'We could not send your inquiry. Please try again.')
+      }
+
+      setStatus('success')
+      form.reset()
+    } catch (submissionError) {
+      setStatus('error')
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : 'We could not send your inquiry. Please try again or email us directly.',
+      )
+    }
   }
 
   return (
@@ -503,10 +533,10 @@ function ContactPage() {
       <div className="form-panel" data-reveal>
         {status === 'success' ? (
           <div className="form-success" role="status">
-            <span>Message prepared</span>
+            <span>Inquiry sent</span>
             <h2>Thank You For Your Inquiry.</h2>
-            <p>This first-stage website has not yet been connected to a mail service. Please also email us directly so we can respond promptly.</p>
-            <a className="button button-primary" href="mailto:shuduo.fang@gmail.com">Open email</a>
+            <p>Your message has been sent to our team. We will respond using the email address you provided.</p>
+            <a className="button button-primary" href="mailto:contact@annuotaimedtech.com">Email Us Directly</a>
             <button type="button" className="text-button" onClick={() => setStatus('idle')}>Send another inquiry</button>
           </div>
         ) : (
@@ -515,12 +545,13 @@ function ContactPage() {
               <span>Inquiry form</span>
               <h2>How Can We Help?</h2>
             </div>
+            <label className="form-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
             <div className="field-row">
-              <label>First name<input name="firstName" autoComplete="given-name" required /></label>
-              <label>Last name<input name="lastName" autoComplete="family-name" required /></label>
+              <label>First name<input name="firstName" autoComplete="given-name" maxLength={80} required /></label>
+              <label>Last name<input name="lastName" autoComplete="family-name" maxLength={80} required /></label>
             </div>
-            <label>Work email<input name="email" type="email" autoComplete="email" required /></label>
-            <label>Organization<input name="organization" autoComplete="organization" required /></label>
+            <label>Work email<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+            <label>Organization<input name="organization" autoComplete="organization" maxLength={160} required /></label>
             <label>I am a
               <select name="audience" defaultValue="Distributor" required>
                 <option>Distributor</option>
@@ -529,10 +560,10 @@ function ContactPage() {
                 <option>Other</option>
               </select>
             </label>
-            <label>Message<textarea name="message" rows={5} required placeholder="Tell us about your market, clinical setting, or product question." /></label>
+            <label>Message<textarea name="message" rows={5} maxLength={4000} required placeholder="Tell us about your market, clinical setting, or product question." /></label>
             {status === 'error' && <p className="form-error" role="alert">{error}</p>}
             <button className="button button-primary form-submit" type="submit" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Preparing inquiry...' : 'Submit inquiry'}
+              {status === 'loading' ? 'Sending inquiry...' : 'Submit inquiry'}
             </button>
             <p className="form-privacy">By submitting, you agree that ANNUOTAI MEDTECH may contact you about this inquiry.</p>
           </form>
