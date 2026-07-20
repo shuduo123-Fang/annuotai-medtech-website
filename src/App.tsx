@@ -1,10 +1,28 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react'
+import { AnchorHTMLAttributes, FocusEvent, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import companyLogo from '../assets/annuotai-logo-transparent.png'
 import wechatQr from '../assets/contact-wechat.jpg'
 import whatsappQr from '../assets/contact-whatsapp.jpg'
-import productHeroImage from '../assets/e7-product-studio-2.jpg'
-import productDetailImage from '../assets/e7-product-studio-1.jpg'
-import aboutGlobalAccessImage from '../assets/about-global-access-transparent.png'
+import productHeroImage from '../assets/e7-product-studio-2-fallback.jpg'
+import productHero640Avif from '../assets/e7-product-studio-2-640.avif'
+import productHero1280Avif from '../assets/e7-product-studio-2-1280.avif'
+import productHero1920Avif from '../assets/e7-product-studio-2-1920.avif'
+import productHero640Webp from '../assets/e7-product-studio-2-640.webp'
+import productHero1280Webp from '../assets/e7-product-studio-2-1280.webp'
+import productHero1920Webp from '../assets/e7-product-studio-2-1920.webp'
+import productDetailImage from '../assets/e7-product-studio-1-fallback.jpg'
+import productDetail640Avif from '../assets/e7-product-studio-1-640.avif'
+import productDetail1280Avif from '../assets/e7-product-studio-1-1280.avif'
+import productDetail1920Avif from '../assets/e7-product-studio-1-1920.avif'
+import productDetail640Webp from '../assets/e7-product-studio-1-640.webp'
+import productDetail1280Webp from '../assets/e7-product-studio-1-1280.webp'
+import productDetail1920Webp from '../assets/e7-product-studio-1-1920.webp'
+import aboutGlobalAccessImage from '../assets/about-global-access-fallback.png'
+import aboutGlobal640Avif from '../assets/about-global-access-640.avif'
+import aboutGlobal1280Avif from '../assets/about-global-access-1280.avif'
+import aboutGlobal1920Avif from '../assets/about-global-access-1920.avif'
+import aboutGlobal640Webp from '../assets/about-global-access-640.webp'
+import aboutGlobal1280Webp from '../assets/about-global-access-1280.webp'
+import aboutGlobal1920Webp from '../assets/about-global-access-1920.webp'
 import productBrochure from '../assets/E7-GENPRO-brochure.pdf?url'
 
 type Route = '/' | '/products' | '/products/e7-genpro' | '/about' | '/contact'
@@ -19,6 +37,55 @@ const routeTitles: Record<Route, string> = {
   '/contact': 'Contact | ANNUOTAI MEDTECH',
 }
 
+const productHeroSources = {
+  avif: `${productHero640Avif} 640w, ${productHero1280Avif} 1280w, ${productHero1920Avif} 1920w`,
+  webp: `${productHero640Webp} 640w, ${productHero1280Webp} 1280w, ${productHero1920Webp} 1920w`,
+  fallback: productHeroImage,
+  width: 2156,
+  height: 1984,
+}
+
+const productDetailSources = {
+  avif: `${productDetail640Avif} 640w, ${productDetail1280Avif} 1280w, ${productDetail1920Avif} 1920w`,
+  webp: `${productDetail640Webp} 640w, ${productDetail1280Webp} 1280w, ${productDetail1920Webp} 1920w`,
+  fallback: productDetailImage,
+  width: 2156,
+  height: 1984,
+}
+
+const aboutGlobalSources = {
+  avif: `${aboutGlobal640Avif} 640w, ${aboutGlobal1280Avif} 1280w, ${aboutGlobal1920Avif} 1920w`,
+  webp: `${aboutGlobal640Webp} 640w, ${aboutGlobal1280Webp} 1280w, ${aboutGlobal1920Webp} 1920w`,
+  fallback: aboutGlobalAccessImage,
+  width: 2816,
+  height: 1536,
+}
+
+type ResponsiveImageProps = {
+  sources: typeof productHeroSources
+  alt: string
+  sizes: string
+  priority?: boolean
+}
+
+function ResponsiveImage({ sources, alt, sizes, priority = false }: ResponsiveImageProps) {
+  return (
+    <picture className="responsive-picture">
+      <source type="image/avif" srcSet={sources.avif} sizes={sizes} />
+      <source type="image/webp" srcSet={sources.webp} sizes={sizes} />
+      <img
+        src={sources.fallback}
+        width={sources.width}
+        height={sources.height}
+        alt={alt}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        decoding="async"
+      />
+    </picture>
+  )
+}
+
 function normalisePath(pathname: string): Route {
   const path = pathname.length > 1 ? pathname.replace(/\/$/, '') : pathname
   return routes.includes(path as Route) ? (path as Route) : '/'
@@ -27,6 +94,8 @@ function normalisePath(pathname: string): Route {
 function App() {
   const [path, setPath] = useState<Route>(() => normalisePath(window.location.pathname))
   const [menuOpen, setMenuOpen] = useState(false)
+  const mainRef = useRef<HTMLElement>(null)
+  const previousPath = useRef<Route>(path)
 
   useEffect(() => {
     const handlePopState = () => setPath(normalisePath(window.location.pathname))
@@ -38,10 +107,16 @@ function App() {
     document.title = routeTitles[path]
     window.scrollTo({ top: 0, behavior: 'instant' })
     setMenuOpen(false)
+    if (previousPath.current !== path) {
+      mainRef.current?.focus({ preventScroll: true })
+    }
+    previousPath.current = path
   }, [path])
 
   useEffect(() => {
+    const root = document.documentElement
     const elements = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'))
+    root.classList.add('reveal-enabled')
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
@@ -54,7 +129,10 @@ function App() {
       { threshold: 0.12 },
     )
     elements.forEach(element => observer.observe(element))
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      root.classList.remove('reveal-enabled')
+    }
   }, [path])
 
   const navigate = (to: Route) => {
@@ -73,8 +151,9 @@ function App() {
 
   return (
     <div className="site-shell">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <Header path={path} navigate={navigate} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      <main>{page}</main>
+      <main id="main-content" ref={mainRef} tabIndex={-1}>{page}</main>
       <Footer navigate={navigate} />
     </div>
   )
@@ -85,11 +164,18 @@ type NavProps = {
   navigate: (route: Route) => void
 }
 
-function SmartLink({ to, navigate, children, className = '' }: { to: Route; navigate: NavProps['navigate']; children: ReactNode; className?: string }) {
+type SmartLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'onClick'> & {
+  to: Route
+  navigate: NavProps['navigate']
+  children: ReactNode
+}
+
+function SmartLink({ to, navigate, children, className = '', ...anchorProps }: SmartLinkProps) {
   return (
     <a
       href={to}
       className={className}
+      {...anchorProps}
       onClick={event => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
         event.preventDefault()
@@ -102,37 +188,62 @@ function SmartLink({ to, navigate, children, className = '' }: { to: Route; navi
 }
 
 function Header({ path, navigate, menuOpen, setMenuOpen }: NavProps & { menuOpen: boolean; setMenuOpen: (open: boolean) => void }) {
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const navItems: { label: string; href: Route }[] = [
     { label: 'Home', href: '/' },
     { label: 'Products', href: '/products' },
     { label: 'About', href: '/about' },
   ]
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setMenuOpen(false)
+      menuButtonRef.current?.focus()
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [menuOpen, setMenuOpen])
+
+  const navigateFromHeader = (route: Route) => {
+    setMenuOpen(false)
+    navigate(route)
+  }
+
   return (
     <header className="site-header">
       <div className="nav-wrap">
-        <SmartLink to="/" navigate={navigate} className="brand-link" aria-label="ANNUOTAI MEDTECH home">
-          <img src={companyLogo} alt="ANNUOTAI MEDTECH" />
+        <SmartLink to="/" navigate={navigateFromHeader} className="brand-link" aria-label="ANNUOTAI MEDTECH home">
+          <img src={companyLogo} width="900" height="207" alt="ANNUOTAI MEDTECH" decoding="async" />
         </SmartLink>
-        <nav className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="Primary navigation">
+        <nav id="primary-navigation" className={menuOpen ? 'main-nav is-open' : 'main-nav'} aria-label="Primary navigation">
           {navItems.map(item => (
             <SmartLink
               key={item.href}
               to={item.href}
-              navigate={navigate}
+              navigate={navigateFromHeader}
               className={path === item.href || (item.href === '/products' && path === '/products/e7-genpro') ? 'active' : ''}
+              aria-current={path === item.href ? 'page' : undefined}
             >
               {item.label}
             </SmartLink>
           ))}
-          <SmartLink to="/contact" navigate={navigate} className="nav-contact">
+          <SmartLink
+            to="/contact"
+            navigate={navigateFromHeader}
+            className={path === '/contact' ? 'nav-contact active' : 'nav-contact'}
+            aria-current={path === '/contact' ? 'page' : undefined}
+          >
             Contact
           </SmartLink>
         </nav>
         <button
+          ref={menuButtonRef}
           className="menu-button"
           type="button"
-          aria-label="Toggle navigation"
+          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+          aria-controls="primary-navigation"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
         >
@@ -149,7 +260,7 @@ function Footer({ navigate }: NavProps) {
     <footer className="site-footer">
       <div className="footer-grid">
         <div className="footer-brand">
-          <img src={companyLogo} alt="ANNUOTAI MEDTECH" />
+          <img src={companyLogo} width="900" height="207" alt="ANNUOTAI MEDTECH" loading="lazy" decoding="async" />
           <p>Bringing Quality Medical Technologies To More Patients.</p>
         </div>
         <div>
@@ -177,7 +288,7 @@ function HomePage({ navigate }: NavProps) {
   return (
     <>
       <section className="home-hero">
-        <div className="hero-copy" data-reveal>
+        <div className="hero-copy">
           <p className="eyebrow">International Medical Technology</p>
           <h1>Bringing Quality Medical Innovation To More Patients.</h1>
           <p className="hero-lede">We help clinically valuable technologies reach the healthcare professionals and patients who need them most.</p>
@@ -187,9 +298,14 @@ function HomePage({ navigate }: NavProps) {
           </div>
         </div>
 
-        <div className="hero-visual" data-reveal>
+        <div className="hero-visual">
           <div className="product-stage">
-            <img src={productHeroImage} alt="E7 GENPRO test kit with sample release agent, test cassette, and dropper in a laboratory setting" />
+            <ResponsiveImage
+              sources={productHeroSources}
+              alt="E7 GENPRO test kit with sample release agent, test cassette, and dropper in a laboratory setting"
+              sizes="(max-width: 820px) calc(100vw - 60px), (max-width: 1100px) calc(100vw - 64px), 47vw"
+              priority
+            />
             <div className="stage-caption">
               <strong>E7 GENPRO</strong>
               <span>HPV E7 Oncoprotein Rapid Test</span>
@@ -218,7 +334,11 @@ function HomePage({ navigate }: NavProps) {
 
       <section className="section featured-product">
         <div className="featured-image" data-reveal>
-          <img src={productDetailImage} alt="E7 GENPRO test kit with sample release agent, test cassette, and dropper on a laboratory bench" />
+          <ResponsiveImage
+            sources={productDetailSources}
+            alt="E7 GENPRO test kit with sample release agent, test cassette, and dropper on a laboratory bench"
+            sizes="(max-width: 820px) calc(100vw - 36px), 50vw"
+          />
         </div>
         <div className="featured-copy" data-reveal>
           <p className="eyebrow">Featured Product</p>
@@ -269,7 +389,11 @@ function ProductsPage({ navigate }: NavProps) {
       <section className="section product-catalog">
         <article className="catalog-card" data-reveal>
           <div className="catalog-image">
-            <img src={productHeroImage} alt="E7 GENPRO product kit with sample release agent, test cassette, and dropper in a laboratory setting" />
+            <ResponsiveImage
+              sources={productHeroSources}
+              alt="E7 GENPRO product kit with sample release agent, test cassette, and dropper in a laboratory setting"
+              sizes="(max-width: 820px) calc(100vw - 36px), 52vw"
+            />
           </div>
           <div className="catalog-content">
             <p className="eyebrow">Cervical Cancer Screening</p>
@@ -298,7 +422,7 @@ function ProductPage({ navigate }: NavProps) {
   return (
     <>
       <section className="product-hero">
-        <div className="product-hero-copy" data-reveal>
+        <div className="product-hero-copy">
           <p className="eyebrow">E7 GENPRO</p>
           <h1>Detect HPV E7 In 15 Minutes.</h1>
           <p>A rapid lateral flow test that directly detects HPV E7 oncoprotein in cervical specimens, with a visual result in 15 minutes.</p>
@@ -307,9 +431,14 @@ function ProductPage({ navigate }: NavProps) {
             <a className="text-link" href={productBrochure} download>Download Brochure <span>↓</span></a>
           </div>
         </div>
-        <div className="product-hero-visual" data-reveal>
+        <div className="product-hero-visual">
           <div className="product-image-panel">
-            <img src={productDetailImage} alt="E7 GENPRO HPV E7 Oncoprotein Test Kit with sample release agent, test cassette, and dropper" />
+            <ResponsiveImage
+              sources={productDetailSources}
+              alt="E7 GENPRO HPV E7 Oncoprotein Test Kit with sample release agent, test cassette, and dropper"
+              sizes="(max-width: 820px) calc(100vw - 36px), 50vw"
+              priority
+            />
           </div>
           <div className="quick-facts">
             <div><strong>LFIA</strong><span>Test format</span></div>
@@ -431,7 +560,11 @@ function AboutPage({ navigate }: NavProps) {
           <p>Our Role</p>
           <h2>From Medical Innovation To Meaningful Patient Access.</h2>
           <div className="about-illustration">
-            <img src={aboutGlobalAccessImage} alt="Medical technology connecting global markets and patient communities" />
+            <ResponsiveImage
+              sources={aboutGlobalSources}
+              alt="Medical technology connecting global markets and patient communities"
+              sizes="(max-width: 820px) calc(100vw - 36px), 45vw"
+            />
           </div>
         </div>
         <div className="about-copy" data-reveal>
@@ -464,28 +597,101 @@ function AboutPage({ navigate }: NavProps) {
   )
 }
 
+type InquiryField = 'firstName' | 'lastName' | 'email' | 'organization' | 'audience' | 'message'
+type InquiryFieldErrors = Partial<Record<InquiryField, string>>
+type InquiryControl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+
+const inquiryFields: InquiryField[] = ['firstName', 'lastName', 'email', 'organization', 'audience', 'message']
+
+function getInquiryFieldError(field: InquiryField, control: InquiryControl) {
+  if (!control.value.trim()) {
+    const labels: Record<InquiryField, string> = {
+      firstName: 'Enter your first name.',
+      lastName: 'Enter your last name.',
+      email: 'Enter your work email address.',
+      organization: 'Enter your organization.',
+      audience: 'Select the option that best describes you.',
+      message: 'Tell us how we can help.',
+    }
+    return labels[field]
+  }
+  if (field === 'email' && control.validity.typeMismatch) {
+    return 'Enter a valid email address, such as name@company.com.'
+  }
+  return ''
+}
+
 function ContactPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<InquiryFieldErrors>({})
+  const successRef = useRef<HTMLDivElement>(null)
+  const formHeadingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    if (status === 'success') successRef.current?.focus()
+  }, [status])
+
+  const updateFieldError = (field: InquiryField, message: string) => {
+    setFieldErrors(current => {
+      const next = { ...current }
+      if (message) next[field] = message
+      else delete next[field]
+      return next
+    })
+  }
+
+  const validateOnBlur = (event: FocusEvent<InquiryControl>) => {
+    const field = event.currentTarget.name as InquiryField
+    updateFieldError(field, getInquiryFieldError(field, event.currentTarget))
+  }
+
+  const clearFieldError = (field: InquiryField) => {
+    if (fieldErrors[field]) updateFieldError(field, '')
+  }
+
+  const fieldAccessibility = (field: InquiryField) => ({
+    'aria-invalid': Boolean(fieldErrors[field]),
+    'aria-describedby': fieldErrors[field] ? `${field}-error` : undefined,
+  })
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const form = event.currentTarget
-    if (!form.checkValidity()) {
-      setStatus('error')
-      setError('Please complete all required fields and check your email address.')
-      form.reportValidity()
+    const nextFieldErrors: InquiryFieldErrors = {}
+    inquiryFields.forEach(field => {
+      const control = form.elements.namedItem(field)
+      if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement || control instanceof HTMLSelectElement) {
+        const message = getInquiryFieldError(field, control)
+        if (message) nextFieldErrors[field] = message
+      }
+    })
+
+    const firstInvalidField = inquiryFields.find(field => nextFieldErrors[field])
+    if (firstInvalidField) {
+      setFieldErrors(nextFieldErrors)
+      setStatus('idle')
+      setError('')
+      window.requestAnimationFrame(() => {
+        const control = form.elements.namedItem(firstInvalidField)
+        if (control instanceof HTMLElement) control.focus()
+      })
       return
     }
+
     setStatus('loading')
     setError('')
+    setFieldErrors({})
 
     const formData = new FormData(form)
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000)
 
     try {
       const response = await fetch('/api/inquiry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           firstName: formData.get('firstName'),
           lastName: formData.get('lastName'),
@@ -507,16 +713,27 @@ function ContactPage() {
     } catch (submissionError) {
       setStatus('error')
       setError(
-        submissionError instanceof Error
+        submissionError instanceof DOMException && submissionError.name === 'AbortError'
+          ? 'The request timed out. Please try again.'
+          : submissionError instanceof Error
           ? submissionError.message
           : 'We could not send your inquiry. Please try again or email us directly.',
       )
+    } finally {
+      window.clearTimeout(timeoutId)
     }
+  }
+
+  const startAnotherInquiry = () => {
+    setStatus('idle')
+    setError('')
+    setFieldErrors({})
+    window.requestAnimationFrame(() => formHeadingRef.current?.focus())
   }
 
   return (
     <section className="contact-page">
-      <div className="contact-intro" data-reveal>
+      <div className="contact-intro">
         <p className="eyebrow">Contact ANNUOTAI MEDTECH</p>
         <h1>Start A Product Or Market Conversation.</h1>
         <p>For product information, distribution discussions, or clinical inquiries, reach our team directly or use the form.</p>
@@ -526,44 +743,67 @@ function ContactPage() {
           <a href="tel:+16465250292"><span>United States</span><strong>+1 646 525 0292</strong></a>
         </div>
         <div className="qr-row">
-          <div><img src={whatsappQr} alt="WhatsApp contact QR code" /><span>WhatsApp</span></div>
-          <div><img src={wechatQr} alt="WeChat contact QR code" /><span>WeChat</span></div>
+          <div><img src={whatsappQr} width="680" height="666" alt="WhatsApp contact QR code" loading="lazy" decoding="async" /><span>WhatsApp</span></div>
+          <div><img src={wechatQr} width="799" height="716" alt="WeChat contact QR code" loading="lazy" decoding="async" /><span>WeChat</span></div>
         </div>
       </div>
-      <div className="form-panel" data-reveal>
+      <div className="form-panel">
         {status === 'success' ? (
-          <div className="form-success" role="status">
+          <div ref={successRef} className="form-success" role="status" tabIndex={-1}>
             <span>Inquiry sent</span>
             <h2>Thank You For Your Inquiry.</h2>
             <p>Your message has been sent to our team. We will respond using the email address you provided.</p>
             <a className="button button-primary" href="mailto:contact@annuotaimedtech.com">Email Us Directly</a>
-            <button type="button" className="text-button" onClick={() => setStatus('idle')}>Send another inquiry</button>
+            <button type="button" className="text-button" onClick={startAnotherInquiry}>Send another inquiry</button>
           </div>
         ) : (
-          <form onSubmit={submit} noValidate>
+          <form onSubmit={submit} noValidate aria-busy={status === 'loading'}>
             <div className="form-heading">
               <span>Inquiry form</span>
-              <h2>How Can We Help?</h2>
+              <h2 ref={formHeadingRef} tabIndex={-1}>How Can We Help?</h2>
+              <p className="form-required-note">All fields are required.</p>
             </div>
             <label className="form-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
             <div className="field-row">
-              <label>First name<input name="firstName" autoComplete="given-name" maxLength={80} required /></label>
-              <label>Last name<input name="lastName" autoComplete="family-name" maxLength={80} required /></label>
+              <label htmlFor="inquiry-first-name">
+                <span>First name</span>
+                <input id="inquiry-first-name" name="firstName" autoComplete="given-name" maxLength={80} required onBlur={validateOnBlur} onChange={() => clearFieldError('firstName')} {...fieldAccessibility('firstName')} />
+                {fieldErrors.firstName && <p id="firstName-error" className="field-error">{fieldErrors.firstName}</p>}
+              </label>
+              <label htmlFor="inquiry-last-name">
+                <span>Last name</span>
+                <input id="inquiry-last-name" name="lastName" autoComplete="family-name" maxLength={80} required onBlur={validateOnBlur} onChange={() => clearFieldError('lastName')} {...fieldAccessibility('lastName')} />
+                {fieldErrors.lastName && <p id="lastName-error" className="field-error">{fieldErrors.lastName}</p>}
+              </label>
             </div>
-            <label>Work email<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
-            <label>Organization<input name="organization" autoComplete="organization" maxLength={160} required /></label>
-            <label>I am a
-              <select name="audience" defaultValue="Distributor" required>
+            <label htmlFor="inquiry-email">
+              <span>Work email</span>
+              <input id="inquiry-email" name="email" type="email" autoComplete="email" maxLength={254} required onBlur={validateOnBlur} onChange={() => clearFieldError('email')} {...fieldAccessibility('email')} />
+              {fieldErrors.email && <p id="email-error" className="field-error">{fieldErrors.email}</p>}
+            </label>
+            <label htmlFor="inquiry-organization">
+              <span>Organization</span>
+              <input id="inquiry-organization" name="organization" autoComplete="organization" maxLength={160} required onBlur={validateOnBlur} onChange={() => clearFieldError('organization')} {...fieldAccessibility('organization')} />
+              {fieldErrors.organization && <p id="organization-error" className="field-error">{fieldErrors.organization}</p>}
+            </label>
+            <label htmlFor="inquiry-audience">
+              <span>I am a</span>
+              <select id="inquiry-audience" name="audience" defaultValue="Distributor" required onBlur={validateOnBlur} onChange={() => clearFieldError('audience')} {...fieldAccessibility('audience')}>
                 <option>Distributor</option>
                 <option>Hospital or clinician</option>
                 <option>Consumer</option>
                 <option>Other</option>
               </select>
+              {fieldErrors.audience && <p id="audience-error" className="field-error">{fieldErrors.audience}</p>}
             </label>
-            <label>Message<textarea name="message" rows={5} maxLength={4000} required placeholder="Tell us about your market, clinical setting, or product question." /></label>
-            {status === 'error' && <p className="form-error" role="alert">{error}</p>}
+            <label htmlFor="inquiry-message">
+              <span>Message</span>
+              <textarea id="inquiry-message" name="message" rows={5} maxLength={4000} required placeholder="Tell us about your market, clinical setting, or product question." onBlur={validateOnBlur} onChange={() => clearFieldError('message')} {...fieldAccessibility('message')} />
+              {fieldErrors.message && <p id="message-error" className="field-error">{fieldErrors.message}</p>}
+            </label>
+            {status === 'error' && <p className="form-error" role="alert">{error} <a href="mailto:contact@annuotaimedtech.com">Email us directly.</a></p>}
             <button className="button button-primary form-submit" type="submit" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Sending inquiry...' : 'Submit inquiry'}
+              <span aria-live="polite">{status === 'loading' ? 'Sending inquiry...' : 'Submit inquiry'}</span>
             </button>
             <p className="form-privacy">By submitting, you agree that ANNUOTAI MEDTECH may contact you about this inquiry.</p>
           </form>
@@ -576,11 +816,11 @@ function ContactPage() {
 function PageHero({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
   return (
     <section className="page-hero">
-      <div data-reveal>
+      <div>
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
       </div>
-      <p className="page-hero-text" data-reveal>{text}</p>
+      <p className="page-hero-text">{text}</p>
     </section>
   )
 }
