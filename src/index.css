@@ -1350,6 +1350,7 @@ h3 {
 
 .qr-row img {
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   object-fit: cover;
   object-position: bottom;
